@@ -1016,6 +1016,7 @@ body {
 
   // ---------------- Persistence ----------------
   function persist(records) {
+    try { if (window.parent && window.parent.__OM_SUPABASE__) window.parent.__OM_SUPABASE__.save('billing_master', records).catch(function(e){ console.warn('Supabase billing sync failed', e); }); } catch(e) {}
     state.savingCount++;
     renderStatusbar();
     appStorage.set(STORAGE_KEY, JSON.stringify({ records: records, updatedAt: Date.now() }), false)
@@ -1043,6 +1044,7 @@ body {
 
   // ---------------- Employee Report: Persistence ----------------
   function persistEmployee(records) {
+    try { if (window.parent && window.parent.__OM_SUPABASE__) window.parent.__OM_SUPABASE__.save('monthly_reports', records).catch(function(e){ console.warn('Supabase monthly sync failed', e); }); } catch(e) {}
     appStorage.set(EMPLOYEE_STORAGE_KEY, JSON.stringify({ records: records, updatedAt: Date.now() }), false)
       .then(function (res) {
         if (!res) throw new Error("save failed");
@@ -4008,6 +4010,7 @@ body {
   // ---------------- Boot ----------------
   initLogin();
   loadData();
+    try { if (window.parent && window.parent.__OM_SUPABASE__) window.parent.__OM_SUPABASE__.load('billing_master').then(function(rows){ if(rows && rows.length){ state.records=rows; state.loaded=true; render(); } }).catch(function(e){ console.warn('Cloud billing load failed',e); }); } catch(e) {}
   loadEmployeeData();
   loadEmployeeCodeMap();
 })();

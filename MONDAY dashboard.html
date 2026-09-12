@@ -437,6 +437,7 @@ const SHEET_ORDER = ['data','legal','yy','nn','yn','warehouse','rfq','newrfq','r
 /* =========================================================================
    STATE
    ========================================================================= */
+function syncRFQ(rows){ try { if(window.parent && window.parent.__OM_SUPABASE__) window.parent.__OM_SUPABASE__.save('rfq_records', rows || []).catch(e=>console.warn('Supabase RFQ sync failed',e)); } catch(e){} }
 const state = {
   buckets: null,          // { data:[], legal:[], yy:[], nn:[], warehouse:[], rfq:[], newrfq:[], excluded:[] }
   overrides: new Map(),   // rowKey -> 'rfq' | 'newrfq'  (manual moves within the RFQ pool)
@@ -754,6 +755,7 @@ function handleFile(file){
         state.missingColumns = missing;
         state.rawRowCount = rows.length;
         state.rawRows = rows;
+        syncRFQ(rows);
 
         document.getElementById('processingMsg').textContent = 'Classifying records…';
         setTimeout(() => {
