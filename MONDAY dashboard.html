@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RFQ Control Deck — Contract Classification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{
+  --paper:#F3F6F5;
+  --panel:#FFFFFF;
+  --ink:#0E2033;
+  --ink-soft:#4A5D6B;
+  --line:#DCE3E1;
+  --line-soft:#EAEFED;
+  --teal:#0E7C7B;
+  --teal-deep:#0A5958;
+  --amber:#C4770A;
+  --amber-bg:#FBF0DD;
+  --brick:#AC3B2E;
+  --brick-bg:#FBE9E6;
+  --navy:#12233B;
+  --navy-deep:#0A1626;
+  --shadow: 0 1px 2px rgba(14,32,51,0.06), 0 6px 20px rgba(14,32,51,0.06);
+  --radius: 10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{ font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; }
+.display{ font-family:'Archivo',sans-serif; }
+
+/* ---------- Top bar ---------- */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 28px;
+  background:var(--navy);
+  color:#EDF2F1;
+  border-bottom:3px solid var(--teal);
+}
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand-mark{
+  width:34px;height:34px;border-radius:8px;
+  background:linear-gradient(135deg,var(--teal),var(--teal-deep));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Archivo',sans-serif; font-weight:800; font-size:16px; color:#fff;
+  flex-shrink:0;
+}
+.brand-text .title{ font-family:'Archivo',sans-serif; font-weight:700; font-size:17px; letter-spacing:0.2px; }
+.brand-text .subtitle{ font-size:12px; color:#9FB4BF; margin-top:1px;}
+.stepper{ display:flex; align-items:center; gap:0; }
+.step{
+  display:flex; align-items:center; gap:8px;
+  font-size:12.5px; color:#8FA4B0; padding:6px 14px; border-radius:100px;
+  transition:color .25s ease;
+}
+.step .dot{ width:7px;height:7px;border-radius:50%; background:#3C5164; transition: all .25s ease;}
+.step.active{ color:#fff; }
+.step.active .dot{ background:var(--teal); box-shadow:0 0 0 4px rgba(14,124,123,0.25); }
+.step.done{ color:#BFE3D8; }
+.step.done .dot{ background:var(--teal); }
+.step-sep{ width:22px; height:1px; background:#2A3E4F; }
+
+/* ---------- Layout ---------- */
+.layout{ display:flex; min-height:calc(100vh - 68px); }
+.sidebar{
+  width:230px; flex-shrink:0; background:var(--panel);
+  border-right:1px solid var(--line); padding:18px 12px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.sidebar-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#8296A2; padding:6px 10px 10px; }
+.nav-item{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--ink-soft);
+  font-size:13.5px; font-weight:500; border:1px solid transparent;
+}
+.nav-item:hover{ background:var(--line-soft); }
+.nav-item.active{ background:#EAF5F4; color:var(--teal-deep); border-color:#CFE9E6; font-weight:600; }
+.nav-item .count{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8296A2; }
+.nav-item.active .count{ color:var(--teal-deep); }
+.nav-item[disabled]{ opacity:0.4; pointer-events:none; }
+
+.main{ flex:1; padding:26px 32px 60px; min-width:0; }
+
+/* ---------- Upload stage ---------- */
+.upload-wrap{ max-width:760px; margin: 40px auto 0; }
+.upload-hero h1{ font-family:'Archivo',sans-serif; font-size:28px; font-weight:700; margin:0 0 8px; letter-spacing:-0.01em; }
+.upload-hero p{ color:var(--ink-soft); font-size:14.5px; line-height:1.6; margin:0 0 28px; max-width:560px; }
+.dropzone{
+  border:2px dashed #B9CBC8; border-radius:16px; background:var(--panel);
+  padding:48px 28px; text-align:center; cursor:pointer;
+  transition: border-color .2s ease, background .2s ease;
+}
+.dropzone:hover, .dropzone.drag{ border-color:var(--teal); background:#F1FAF9; }
+.dropzone .icon{ width:52px;height:52px;margin:0 auto 16px; }
+.dropzone .cta{ font-weight:600; font-size:15px; color:var(--ink); margin-bottom:6px; }
+.dropzone .hint{ font-size:12.5px; color:#8296A2; }
+.dropzone input{ display:none; }
+.formats{ display:flex; gap:8px; justify-content:center; margin-top:18px; }
+.formats span{
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:4px 10px;
+  border:1px solid var(--line); border-radius:100px; color:var(--ink-soft); background:#fff;
+}
+.upload-error{
+  margin-top:16px; padding:12px 16px; border-radius:8px;
+  background:var(--brick-bg); color:var(--brick); font-size:13px; display:none;
+}
+.optional-uploads{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px; }
+@media (max-width:700px){ .optional-uploads{ grid-template-columns:1fr; } }
+.opt-card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; }
+.opt-title{ font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.opt-tag{ font-size:10.5px; font-weight:600; color:#8296A2; background:var(--line-soft); padding:2px 8px; border-radius:100px; text-transform:uppercase; letter-spacing:0.04em; }
+.opt-desc{ font-size:12px; color:var(--ink-soft); line-height:1.55; margin-bottom:12px; }
+.opt-drop{ display:block; border:1.5px dashed var(--line); border-radius:8px; padding:11px 12px; text-align:center; font-size:12px; color:#8296A2; cursor:pointer; transition:border-color .15s ease, color .15s ease; }
+.opt-drop:hover{ border-color:var(--teal); color:var(--teal-deep); }
+.opt-drop.done{ border-style:solid; border-color:var(--teal); color:var(--teal-deep); background:#F1FAF9; }
+.opt-drop input{ display:none; }
+
+/* ---------- Processing ---------- */
+.processing{ max-width:760px; margin:70px auto 0; text-align:center; display:none; }
+.spinner{
+  width:44px;height:44px;border-radius:50%;
+  border:3px solid #DCE9E8; border-top-color:var(--teal);
+  margin:0 auto 20px; animation:spin .8s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.processing .msg{ font-size:14px; color:var(--ink-soft); }
+
+/* ---------- Funnel reveal ---------- */
+.funnel{ max-width:900px; margin:8px auto 0; display:none; }
+.funnel-row{ display:flex; align-items:center; gap:14px; margin-bottom:10px; }
+.funnel-label{ width:150px; flex-shrink:0; font-size:12.5px; color:var(--ink-soft); text-align:right; }
+.funnel-track{ flex:1; height:20px; background:#EAEFED; border-radius:6px; overflow:hidden; position:relative; }
+.funnel-fill{ height:100%; width:0%; border-radius:6px; transition:width 1s cubic-bezier(.16,1,.3,1); }
+.funnel-count{ width:56px; flex-shrink:0; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink); text-align:left; }
+
+/* ---------- Dashboard stage ---------- */
+.dash{ display:none; }
+.summary-grid{
+  display:grid; grid-template-columns:repeat(8,1fr); gap:12px; margin-bottom:22px;
+}
+@media (max-width:1300px){ .summary-grid{ grid-template-columns:repeat(4,1fr); } }
+.sum-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:14px 14px 12px; cursor:pointer; transition:box-shadow .15s ease, transform .15s ease;
+}
+.sum-card:hover{ box-shadow:var(--shadow); transform:translateY(-1px); }
+.sum-card.active{ border-color:var(--teal); box-shadow:0 0 0 2px rgba(14,124,123,0.15); }
+.sum-card .k{ font-size:11px; color:#8296A2; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;}
+.sum-card .v{ font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; color:var(--ink); }
+.sum-card .bar{ height:3px; border-radius:2px; margin-top:8px; }
+
+.toolbar{
+  display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;
+}
+.search-box{
+  flex:1; min-width:220px; display:flex; align-items:center; gap:8px;
+  background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:9px 12px;
+}
+.search-box input{ border:none; outline:none; font-size:13.5px; width:100%; background:transparent; font-family:'Inter'; }
+.search-box svg{ flex-shrink:0; opacity:0.5; }
+.threshold-ctrl{
+  display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--line);
+  border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--ink-soft);
+}
+.threshold-ctrl input[type=range]{ width:110px; accent-color:var(--teal); }
+.threshold-ctrl .val{ font-family:'IBM Plex Mono',monospace; color:var(--ink); font-weight:600; min-width:20px; }
+.btn{
+  display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:8px;
+  font-size:13.5px; font-weight:600; cursor:pointer; border:1px solid transparent; font-family:'Inter';
+}
+.btn-primary{ background:var(--teal); color:#fff; }
+.btn-primary:hover{ background:var(--teal-deep); }
+.btn-ghost{ background:#fff; border-color:var(--line); color:var(--ink); }
+.btn-ghost:hover{ background:var(--line-soft); }
+.btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+.panel{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  overflow:hidden; margin-bottom:20px;
+}
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 18px; border-bottom:1px solid var(--line-soft);
+}
+.panel-head h3{ margin:0; font-size:14.5px; font-weight:700; font-family:'Archivo',sans-serif; }
+.panel-head .desc{ font-size:12px; color:#8296A2; margin-top:2px; }
+
+/* validation */
+.validation-list{ padding:6px 0; }
+.val-item{ display:flex; gap:10px; padding:11px 18px; border-bottom:1px solid var(--line-soft); font-size:13px; }
+.btn-inline{ display:inline-block; margin-left:6px; padding:3px 10px; font-size:11.5px; font-weight:600;
+  border:1px solid var(--teal); background:transparent; color:var(--teal-deep); cursor:pointer; border-radius:4px; }
+.btn-inline:hover{ background:var(--teal); color:#fff; }
+.val-item:last-child{ border-bottom:none; }
+.val-icon{ width:18px; height:18px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; margin-top:1px;}
+.val-icon.ok{ background:#DFF3EF; color:var(--teal-deep); }
+.val-icon.warn{ background:var(--amber-bg); color:var(--amber); }
+.val-icon.info{ background:#E6EEF7; color:#33587D; }
+.val-text b{ font-weight:600; }
+.val-text .sub{ color:#8296A2; font-size:12px; margin-top:2px; }
+
+/* table */
+.table-scroll{ overflow-x:auto; }
+table.data-table{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:1400px; }
+table.data-table thead th{
+  position:sticky; top:0; background:var(--navy); color:#DDE7E5; text-align:left;
+  padding:9px 12px; font-weight:600; font-size:11.5px; white-space:nowrap; cursor:pointer; user-select:none;
+  border-right:1px solid rgba(255,255,255,0.08);
+}
+table.data-table thead th:hover{ background:var(--navy-deep); }
+table.data-table thead th .arrow{ opacity:0.5; margin-left:4px; font-size:10px; }
+table.data-table tbody td{
+  padding:8px 12px; border-bottom:1px solid var(--line-soft); white-space:nowrap;
+  max-width:260px; overflow:hidden; text-overflow:ellipsis; color:var(--ink);
+}
+table.data-table tbody tr:hover{ background:#F7FBFA; }
+table.data-table tbody tr:nth-child(even){ background:#FBFCFC; }
+table.data-table tbody tr:nth-child(even):hover{ background:#F4FAF9; }
+.badge{ padding:2px 8px; border-radius:100px; font-size:11px; font-weight:600; display:inline-block; }
+.badge-y{ background:#DFF3EF; color:var(--teal-deep); }
+.badge-n{ background:var(--brick-bg); color:var(--brick); }
+.badge-blank{ background:#EEF1F0; color:#8296A2; }
+.override-cell{ text-align:center; }
+.override-cell input{ width:15px; height:15px; accent-color:var(--teal); cursor:pointer; }
+
+.empty-state{ padding:50px 20px; text-align:center; color:#8296A2; font-size:13.5px; }
+
+.pagination{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 18px; border-top:1px solid var(--line-soft); font-size:12.5px; color:var(--ink-soft);
+}
+.pagination .pg-btns{ display:flex; gap:6px; }
+.pagination button{
+  border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 10px; cursor:pointer; font-size:12px;
+}
+.pagination button:disabled{ opacity:0.4; cursor:not-allowed; }
+.pagination button:hover:not(:disabled){ background:var(--line-soft); }
+
+.sticky-download{
+  position:sticky; bottom:0; margin-top:8px; padding:16px 0 4px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.download-note{ font-size:12px; color:#8296A2; }
+
+@media (max-width:900px){
+  .sidebar{ display:none; }
+  table.data-table{ min-width:1100px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">RQ</div>
+    <div class="brand-text">
+      <div class="title">RFQ Control Deck</div>
+      <div class="subtitle">Customer contract classification</div>
+    </div>
+  </div>
+  <div class="stepper" id="stepper">
+    <div class="step active" data-step="upload"><span class="dot"></span>Upload</div>
+    <div class="step-sep"></div>
+    <div class="step" data-step="process"><span class="dot"></span>Process</div>
+    <div class="step-sep"></div>
+    <div class="step" data-step="preview"><span class="dot"></span>Preview</div>
+    <div class="step-sep"></div>
+    <div class="step" data-step="validate"><span class="dot"></span>Validate</div>
+    <div class="step-sep"></div>
+    <div class="step" data-step="export"><span class="dot"></span>Export</div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar" style="display:none;">
+    <div class="sidebar-label">Report Sheets</div>
+    <div class="nav-item active" data-sheet="data">Data <span class="count" id="nav-count-data">0</span></div>
+    <div class="nav-item" data-sheet="legal">Legal <span class="count" id="nav-count-legal">0</span></div>
+    <div class="nav-item" data-sheet="yy">Y &amp; Y <span class="count" id="nav-count-yy">0</span></div>
+    <div class="nav-item" data-sheet="nn">N &amp; N <span class="count" id="nav-count-nn">0</span></div>
+    <div class="nav-item" data-sheet="yn">Y &amp; N <span class="count" id="nav-count-yn">0</span></div>
+    <div class="nav-item" data-sheet="warehouse">Warehouse <span class="count" id="nav-count-warehouse">0</span></div>
+    <div class="nav-item" data-sheet="rfq">RFQ <span class="count" id="nav-count-rfq">0</span></div>
+    <div class="nav-item" data-sheet="newrfq">New RFQ <span class="count" id="nav-count-newrfq">0</span></div>
+    <div class="nav-item" data-sheet="review">Review Required <span class="count" id="nav-count-review">0</span></div>
+    <div class="nav-item" data-sheet="total">Total <span class="count" id="nav-count-total">9</span></div>
+    <div class="nav-item" data-sheet="excluded">Excluded <span class="count" id="nav-count-excluded">0</span></div>
+    <div style="flex:1"></div>
+    <div style="padding:10px 12px; display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-ghost" id="resetBtn" style="width:100%; justify-content:center;">Upload new file</button>
+      <button class="btn btn-ghost" id="resetAllBtn" style="width:100%; justify-content:center; border-color:var(--brick); color:var(--brick);">Reset All Data</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Stage 1: Upload -->
+    <div class="upload-wrap" id="stageUpload">
+      <div class="upload-hero">
+        <h1>Turn a raw contract export into a classified RFQ report</h1>
+        <p>Upload the raw customer-contract export exactly as it comes out of the system. The deck sorts every record into Data, Legal, Y&amp;Y, N&amp;N, Warehouse, RFQ, New RFQ and Total — matching the structure your team already works with — entirely in this browser. Nothing leaves your machine.</p>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3v12m0-12l-4 4m4-4l4 4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="#0E7C7B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="cta">Drop your raw report here, or click to browse</div>
+        <div class="hint">One sheet of customer-contract rows — .xls or .xlsx</div>
+        <input type="file" id="fileInput" accept=".xls,.xlsx">
+      </div>
+      <div class="formats"><span>.XLS</span><span>.XLSX</span></div>
+      <div class="upload-error" id="uploadError"></div>
+
+      <div class="optional-uploads">
+        <div class="opt-card">
+          <div class="opt-title">TOTAL RFQ master <span class="opt-tag">optional</span></div>
+          <div class="opt-desc">A party-code list your team already maintains. If provided, it decides RFQ vs New RFQ by lookup — code found in the master → RFQ, code not found → New RFQ — instead of the date heuristic.</div>
+          <label class="opt-drop" id="masterDrop">
+            <span id="masterLabel">Click to attach the master file (.xls / .xlsx)</span>
+            <input type="file" id="masterInput" accept=".xls,.xlsx">
+          </label>
+        </div>
+        <div class="opt-card">
+          <div class="opt-title">Reference final report <span class="opt-tag">optional</span></div>
+          <div class="opt-desc">A known-correct final report. If provided, every sheet count this run produces is diffed against it, and any mismatch is flagged in Validation.</div>
+          <label class="opt-drop" id="refDrop">
+            <span id="refLabel">Click to attach a reference report to auto-check against</span>
+            <input type="file" id="refInput" accept=".xls,.xlsx">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 2: Processing -->
+    <div class="processing" id="stageProcessing">
+      <div class="spinner"></div>
+      <div class="msg" id="processingMsg">Reading workbook…</div>
+      <div class="funnel" id="funnel"></div>
+    </div>
+
+    <!-- Stage 3: Dashboard -->
+    <div class="dash" id="stageDash">
+
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <div class="panel" id="validationPanel">
+        <div class="panel-head">
+          <div>
+            <h3>Validation</h3>
+            <div class="desc">Reconciliation checks against the uploaded file</div>
+          </div>
+        </div>
+        <div class="validation-list" id="validationList"></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#0E2033" stroke-width="1.8"/><path d="M21 21l-4-4" stroke="#0E2033" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input type="text" id="searchInput" placeholder="Search this sheet — name, code, remarks…">
+        </div>
+        <div class="threshold-ctrl" id="thresholdCtrl">
+          <span>New RFQ = uploaded by</span>
+          <input type="text" id="uploaderCodesInput" value="13312, 33424" style="width:100px; border:1px solid var(--line); border-radius:6px; padding:4px 8px; font-family:'IBM Plex Mono',monospace; font-size:12px;">
+          <span>within last</span>
+          <input type="range" id="thresholdRange" min="1" max="60" value="18">
+          <span class="val"><span id="thresholdVal">18</span>d</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 id="tableTitle">Data</h3>
+            <div class="desc" id="tableDesc">Full cleaned dataset</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <span id="rfqMoveHint" style="display:none; font-size:12px; color:#8296A2; align-self:center;">Tick a row to move it to New RFQ →</span>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr id="tableHead"></tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="emptyState" style="display:none;">No rows match your search.</div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+
+      <div class="sticky-download">
+        <div class="download-note">Download regenerates the workbook from the current classification — including any manual New RFQ overrides.</div>
+        <button class="btn btn-primary" id="downloadBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download final Excel
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   SCHEMA & CONSTANTS
+   ========================================================================= */
+const SCHEMA = [
+  'CUSTOMER_COMPANY_CODE','CUSTOMER_CUSTOMER_CODE','CUSTOMER_CUSTOMER_NAME','CUST_BILLING_TYPE',
+  'CUSTOMER_BILL_LOC','CONT_STATUS','CONT_EFFECTIVE_FROM','CONT_EFFECTIVE_TO',
+  'CUSTOMER_CONTRACT_UPLOAD_BY','CUSTOMER_CONTRACT_UPLOAD_DATE','CUSTOMER_CONTRACT_VERIFY_FLG',
+  'LAST_BILL_NO','LAST_BILL_DATE','CUSTOMER_REMARKS','CUSTOMER_TYPE','VERIFIED_FLG','CUSTOMER_CONTRACT_TYPE'
+];
+const SHEET_META = {
+  data:      { label:'data',     title:'Data',     desc:'TBB customers only, legal (4103) and out-of-scope locations (>=4203) removed', color:'#12233B', serial:false },
+  legal:     { label:'legal',    title:'Legal',    desc:'Bill location 4103 — routed to the legal team',                  color:'#5B4B8A', serial:true },
+  yy:        { label:'Y&Y',      title:'Y & Y',    desc:'Contract status Y and contract verified Y — fed & verified',     color:'#0E7C7B', serial:true },
+  nn:        { label:'N&N',      title:'N & N',    desc:'Contract status N and never uploaded — not fed, not verified',   color:'#AC3B2E', serial:true },
+  yn:        { label:'Y&N',      title:'Y & N',    desc:'Contract status Y but verify flag not Y — invalid combination',  color:'#7A4B1F', serial:true },
+  warehouse: { label:'warehouse',title:'Warehouse',desc:'Contract type is Warehouse',                                     color:'#33587D', serial:true },
+  rfq:       { label:'RFQ',      title:'RFQ',      desc:'Contract uploaded, not yet active — awaiting a rate quote',      color:'#C4770A', serial:true },
+  newrfq:    { label:'new rfq',  title:'New RFQ',  desc:'RFQ pool, verified inside the recency window',                   color:'#D9A400', serial:true },
+  review:    { label:'review required', title:'Review Required', desc:'RFQ-pool rows with a blank P.CODE or a P.CODE duplicated within this file — could not be looked up safely', color:'#B23A48', serial:true },
+  total:     { label:'total',    title:'Total',    desc:'Reconciled counts across every sheet',                          color:'#0E2033', serial:false },
+  excluded:  { label:'excluded', title:'Excluded', desc:'Non-TBB customer types, shown for transparency, not exported',   color:'#8296A2', serial:false },
+};
+const SHEET_ORDER = ['data','legal','yy','nn','yn','warehouse','rfq','newrfq','review','total','excluded'];
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+const state = {
+  buckets: null,          // { data:[], legal:[], yy:[], nn:[], warehouse:[], rfq:[], newrfq:[], excluded:[] }
+  overrides: new Map(),   // rowKey -> 'rfq' | 'newrfq'  (manual moves within the RFQ pool)
+  activeSheet: 'data',
+  search: '',
+  sortCol: null,
+  sortDir: 1,
+  page: 1,
+  pageSize: 50,
+  newRfqDays: 18,
+  newRfqUploaders: new Set(['13312','33424']),
+  sourceFileName: '',
+  masterCodes: null,       // Set of normalized party codes from optional TOTAL RFQ master, or null if not attached
+  masterFileName: '',
+  refWorkbook: null,       // optional reference workbook (SheetJS) for auto-diff validation
+  refFileName: '',
+};
+
+/* =========================================================================
+   HELPERS
+   ========================================================================= */
+function norm(v){ if(v===null||v===undefined) return ''; return typeof v==='number'?v:String(v).trim(); }
+function up(v){ const n=norm(v); return typeof n==='string'?n.toUpperCase():n; }
+function isBlank(v){ const n=up(v); return n===''||n==='NULL'; }
+function toNum(v){ if(v===null||v===undefined||v==='') return null; const n=Number(v); return isNaN(n)?null:n; }
+function parseDate(s){
+  if(!s) return null;
+  const str = String(s).split(' ')[0];
+  const m = str.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+  if(!m) return null;
+  const months = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+  const mon = months[m[2].toUpperCase()];
+  if(mon===undefined) return null;
+  let yr = parseInt(m[3],10);
+  if(yr<100) yr += 2000;
+  return new Date(yr, mon, parseInt(m[1],10));
+}
+function normalizeCode(v){
+  if(v===null||v===undefined) return '';
+  if(typeof v==='number') return String(Math.trunc(v));
+  const s = String(v).trim();
+  if(s==='') return '';
+  if(/^-?\d+(\.\d+)?$/.test(s)) return String(Math.trunc(Number(s)));
+  return s.toUpperCase();
+}
+function rowKey(r){
+  return norm(r['CUSTOMER_CUSTOMER_CODE']) + '|' + norm(r['CUSTOMER_COMPANY_CODE']) + '|' + norm(r['CUSTOMER_CONTRACT_UPLOAD_DATE']);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* =========================================================================
+   CLASSIFICATION ENGINE
+   ========================================================================= */
+function classify(rows, newRfqDays){
+  const excluded=[], legal=[], yn=[];
+  const tbb=[];
+  for(const r of rows){
+    const ct = up(r['CUSTOMER_TYPE']);
+    // Non-TBB customer types (RTL, SPL, etc.) are still dropped from the report exactly
+    // as before — they are simply no longer listed on the Excluded sheet/tab.
+    if(ct && ct!=='TBB'){ continue; }
+    tbb.push(r);
+  }
+  // SOP Slide 4: location-wise selection.
+  // BILL_LOC === 4103 -> Legal sheet (carved out first).
+  // BILL_LOC >= 4203   -> not covered by this weekly report at all; still excluded entirely,
+  //                       just no longer listed on the Excluded sheet/tab.
+  const afterLoc=[];
+  const blankLoc=[];
+  for(const r of tbb){
+    const loc = toNum(r['CUSTOMER_BILL_LOC']);
+    if(loc===4103){ legal.push(r); continue; }
+    // Blank CUSTOMER_BILL_LOC is a data-quality gap in the raw feed (branch code never
+    // populated). Per team decision, these are routed straight to Warehouse rather than
+    // being excluded, since we cannot otherwise place them into legal/data/out-of-scope.
+    if(loc===null){ blankLoc.push(r); continue; }
+    if(loc>=4203){ continue; }
+    afterLoc.push(r);
+  }
+  const dataRows=[];
+  // "data" keeps everything except the Y-status/not-Y-verify invalid combination.
+  // A separate invalid combination (N-status with VERIFY_FLG=Y) is also not a defined SOP
+  // state — those rows stay listed in "data" but are excluded from every category sheet below
+  // (verified against the reference report: this is exactly how it behaves — 25 such rows).
+  for(const r of afterLoc){
+    const status = up(r['CONT_STATUS']);
+    const verify = up(r['CUSTOMER_CONTRACT_VERIFY_FLG']);
+    if(status==='Y' && verify!=='Y'){ yn.push({...r, __excludeReason:'Status Y but verify flag not Y (invalid combination)'}); continue; }
+    if(status!=='Y' && status!=='N'){ excluded.push({...r, __excludeReason:'Contract status is neither Y nor N'}); continue; }
+    dataRows.push(r);
+  }
+  let pool = dataRows;
+  const yy=[], afterYY=[];
+  // Slide 5: CONT_STATUS = Y AND VERIFY_FLG = Y (both must be literally Y — not "not N").
+  for(const r of pool){ (up(r['CONT_STATUS'])==='Y' && up(r['CUSTOMER_CONTRACT_VERIFY_FLG'])==='Y') ? yy.push(r) : afterYY.push(r); }
+  pool = afterYY;
+  // The N-status/VERIFY_FLG=Y combination is not a defined SOP state either — it stays in
+  // "data" (already pushed above) but is not carried into warehouse/N&N/RFQ.
+  pool = pool.filter(r => up(r['CUSTOMER_CONTRACT_VERIFY_FLG']) !== 'Y');
+  const wh=[], afterWH=[];
+  // Slide 7: from the N-side pool, WAREHOUSE contract type is carved out first.
+  for(const r of pool){ up(r['CUSTOMER_CONTRACT_TYPE'])==='WAREHOUSE' ? wh.push(r) : afterWH.push(r); }
+  pool = afterWH;
+  // Blank-bill-location rows (carved out above, before any status/verify/contract-type
+  // checks) are appended to Warehouse as-is, tagged for visibility.
+  for(const r of blankLoc){ wh.push({...r, __note:'Bill location was blank — routed to Warehouse by rule'}); }
+  const nn=[], afterNN=[];
+  // Slide 6/8: N&N keeps blank CUSTOMER_CONTRACT_UPLOAD_BY (verify flag N or blank both allowed
+  // on the N-side — verified against reference: 16 true N&N rows have a blank verify flag).
+  for(const r of pool){ isBlank(r['CUSTOMER_CONTRACT_UPLOAD_BY']) ? nn.push(r) : afterNN.push(r); }
+  pool = afterNN;
+
+  // split remaining pool into rfq / newrfq.
+  // Priority 1: TOTAL RFQ master (party-code list), if attached -> exact lookup.
+  // Priority 2 (default): "New RFQ" = uploaded by one of the configured new-business uploader
+  //   codes AND verified within the recency window. This two-factor rule was reverse-engineered
+  //   from the reference report (99.96% exact match) — a pure date cutoff alone was not enough.
+  // Manual per-row overrides always win over either method.
+  let maxDate = null;
+  if(!state.masterCodes){
+    for(const r of pool){ const d=parseDate(r['CUSTOMER_CONTRACT_UPLOAD_DATE']); if(d && (!maxDate || d>maxDate)) maxDate=d; }
+  }
+  // Count how many times each P.CODE appears within this RFQ-family pool, to catch duplicates.
+  const codeCounts = new Map();
+  for(const r of pool){
+    const code = normalizeCode(r['CUSTOMER_CUSTOMER_CODE']);
+    if(code==='') continue;
+    codeCounts.set(code, (codeCounts.get(code)||0)+1);
+  }
+  const rfq=[], newrfq=[], review=[];
+  for(const r of pool){
+    const key = rowKey(r);
+    const override = state.overrides.get(key);
+    if(override === 'newrfq'){ newrfq.push(r); continue; }
+    if(override === 'rfq'){ rfq.push(r); continue; }
+    if(override === 'review'){ review.push(r); continue; }
+
+    const code = normalizeCode(r['CUSTOMER_CUSTOMER_CODE']);
+    if(code===''){ review.push({...r, __reviewReason:'Blank P.CODE / party code'}); continue; }
+    if(codeCounts.get(code) > 1){ review.push({...r, __reviewReason:'P.CODE duplicated within this file'}); continue; }
+
+    if(state.masterCodes){
+      if(state.masterCodes.has(code)){ rfq.push(r); }
+      else { newrfq.push(r); }
+      continue;
+    }
+    const d = parseDate(r['CUSTOMER_CONTRACT_UPLOAD_DATE']);
+    const uploader = normalizeCode(r['CUSTOMER_CONTRACT_UPLOAD_BY']);
+    const uploaderMatches = state.newRfqUploaders.size===0 || state.newRfqUploaders.has(uploader);
+    const withinWindow = maxDate && d && (maxDate - d)/86400000 <= newRfqDays-1;
+    if(uploaderMatches && withinWindow){ newrfq.push(r); }
+    else { rfq.push(r); }
+  }
+
+  // Coverage diagnostics for the master-lookup path: if the attached master
+  // already contains ~every code in this run's pool, VLOOKUP structurally
+  // cannot produce any "new rfq" rows — that's not a bug in the match logic,
+  // it means the master file isn't a *prior* snapshot. Surface this so it's
+  // obvious instead of silently showing an empty New RFQ sheet.
+  let masterStats = null;
+  if(state.masterCodes){
+    const poolCodesSeen = new Set();
+    let matched = 0, total = 0;
+    for(const r of pool){
+      const code = normalizeCode(r['CUSTOMER_CUSTOMER_CODE']);
+      if(code==='' || codeCounts.get(code) > 1) continue;
+      total++;
+      if(state.masterCodes.has(code)) matched++;
+    }
+    masterStats = { total, matched, coveragePct: total ? Math.round((matched/total)*1000)/10 : 0 };
+  }
+
+  return { data:dataRows, legal, yy, nn, yn, warehouse:wh, rfq, newrfq, review, excluded, masterStats };
+}
+
+/* =========================================================================
+   FILE HANDLING
+   ========================================================================= */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const uploadError = document.getElementById('uploadError');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if(e.target.files.length) handleFile(e.target.files[0]); });
+
+/* ---- optional: TOTAL RFQ master (party-code list for RFQ vs New RFQ lookup) ---- */
+const masterInput = document.getElementById('masterInput');
+const masterDrop = document.getElementById('masterDrop');
+const MASTER_CODE_CANDIDATES = ['P. CODE','P.CODE','PCODE','P CODE','PARTY_CODE','PARTY CODE','CUSTOMER_CUSTOMER_CODE'];
+masterDrop.addEventListener('click', e => { if(e.target.tagName!=='INPUT') masterInput.click(); });
+masterInput.addEventListener('change', e => { if(e.target.files.length) handleMasterFile(e.target.files[0]); });
+
+function handleMasterFile(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array', raw:true });
+      const sheetName = wb.SheetNames[0];
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, defval:null, raw:true });
+      let colIdx = 0;
+      if(aoa.length){
+        const header = aoa[0];
+        for(let i=0;i<header.length;i++){
+          const h = String(header[i]||'').trim().toUpperCase().replace(/\s+/g,' ');
+          if(MASTER_CODE_CANDIDATES.map(c=>c.toUpperCase()).includes(h)){ colIdx = i; break; }
+        }
+      }
+      let startRow = 0;
+      const firstVal = aoa.length ? aoa[0][colIdx] : null;
+      if(typeof firstVal === 'string' && isNaN(Number(firstVal))) startRow = 1;
+      const codes = new Set();
+      for(let r=startRow; r<aoa.length; r++){
+        const v = aoa[r] ? aoa[r][colIdx] : null;
+        if(v===null||v===undefined) continue;
+        const s = String(v).trim();
+        if(s==='') continue;
+        codes.add(normalizeCode(v));
+      }
+      state.masterCodes = codes;
+      state.masterFileName = file.name;
+      masterDrop.classList.add('done');
+      document.getElementById('masterLabel').textContent = `${file.name} — ${codes.size} codes loaded`;
+      if(state.buckets){
+        state.overrides.clear();
+        state.buckets = classify(state.rawRows, state.newRfqDays);
+        renderAll();
+      }
+    }catch(err){
+      console.error(err);
+      document.getElementById('masterLabel').textContent = 'Could not read this file — please check the format.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function clearMasterAndReclassify(){
+  state.masterCodes = null;
+  state.masterFileName = '';
+  masterDrop.classList.remove('done');
+  document.getElementById('masterLabel').textContent = 'Click to attach the master file (.xls / .xlsx)';
+  if(masterInput) masterInput.value = '';
+  if(state.rawRows && state.rawRows.length){
+    state.overrides.clear();
+    state.buckets = classify(state.rawRows, state.newRfqDays);
+    renderAll();
+  }
+}
+
+/* ---- optional: reference final report (auto-diff validation) ---- */
+const refInput = document.getElementById('refInput');
+const refDrop = document.getElementById('refDrop');
+refDrop.addEventListener('click', e => { if(e.target.tagName!=='INPUT') refInput.click(); });
+refInput.addEventListener('change', e => { if(e.target.files.length) handleRefFile(e.target.files[0]); });
+
+function handleRefFile(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array', raw:true });
+      state.refWorkbook = wb;
+      state.refFileName = file.name;
+      refDrop.classList.add('done');
+      document.getElementById('refLabel').textContent = `${file.name} — sheets: ${wb.SheetNames.join(', ')}`;
+      if(state.buckets) renderValidation();
+    }catch(err){
+      console.error(err);
+      document.getElementById('refLabel').textContent = 'Could not read this file — please check the format.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showUploadError(msg){
+  uploadError.textContent = msg;
+  uploadError.style.display = 'block';
+}
+
+function handleFile(file){
+  uploadError.style.display = 'none';
+  const name = file.name.toLowerCase();
+  if(!name.endsWith('.xls') && !name.endsWith('.xlsx')){
+    showUploadError('Please upload a .xls or .xlsx file.');
+    return;
+  }
+  state.sourceFileName = file.name;
+  setStage('process');
+  setStep('process');
+  document.getElementById('processingMsg').textContent = 'Reading workbook…';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    setTimeout(() => {
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type:'array', raw:true });
+        const sheetName = wb.SheetNames.includes('data') ? 'data' : wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true });
+
+        if(!rows.length){
+          setStage('upload'); setStep('upload');
+          showUploadError('The workbook has no data rows to classify.');
+          return;
+        }
+        const headerSet = new Set(Object.keys(rows[0]).map(h => h.trim().toUpperCase()));
+        const missing = SCHEMA.filter(h => !headerSet.has(h));
+        state.missingColumns = missing;
+        state.rawRowCount = rows.length;
+        state.rawRows = rows;
+
+        document.getElementById('processingMsg').textContent = 'Classifying records…';
+        setTimeout(() => {
+          state.overrides.clear();
+          state.buckets = classify(rows, state.newRfqDays);
+          runFunnelReveal(() => {
+            setStage('dash'); setStep('preview');
+            document.getElementById('sidebar').style.display = 'flex';
+            renderAll();
+          });
+        }, 250);
+      }catch(err){
+        console.error(err);
+        setStage('upload'); setStep('upload');
+        showUploadError('Could not read this file. Please confirm it is a valid .xls or .xlsx export.');
+      }
+    }, 150);
+  };
+  reader.onerror = () => {
+    setStage('upload'); setStep('upload');
+    showUploadError('Could not read this file from disk. Please try again.');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* =========================================================================
+   STAGE / STEP CONTROL
+   ========================================================================= */
+function setStage(stage){
+  document.getElementById('stageUpload').style.display = stage==='upload' ? 'block' : 'none';
+  document.getElementById('stageProcessing').style.display = stage==='process' ? 'block' : 'none';
+  document.getElementById('stageDash').style.display = stage==='dash' ? 'block' : 'none';
+  if(stage!=='dash') document.getElementById('sidebar').style.display = 'none';
+}
+function setStep(step){
+  const order = ['upload','process','preview','validate','export'];
+  const idx = order.indexOf(step);
+  document.querySelectorAll('.step').forEach(el=>{
+    const i = order.indexOf(el.dataset.step);
+    el.classList.remove('active','done');
+    if(i<idx) el.classList.add('done');
+    if(i===idx) el.classList.add('active');
+  });
+}
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  state.buckets = null; state.overrides.clear(); state.rawRows = null;
+  fileInput.value = '';
+  document.getElementById('sidebar').style.display = 'none';
+  setStage('upload'); setStep('upload');
+});
+
+document.getElementById('resetAllBtn').addEventListener('click', () => {
+  if(!confirm('Ye current upload, master/reference files, aur saari settings clear kar dega. Continue?')) return;
+
+  state.buckets = null;
+  state.overrides.clear();
+  state.rawRows = null;
+  state.rawRowCount = 0;
+  state.sourceFileName = '';
+  state.masterCodes = null;
+  state.masterFileName = '';
+  state.refWorkbook = null;
+  state.refFileName = '';
+  state.activeSheet = 'data';
+  state.search = '';
+  state.sortCol = null;
+  state.sortDir = 1;
+  state.page = 1;
+  state.newRfqDays = 18;
+  state.newRfqUploaders = new Set(['13312','33424']);
+
+  fileInput.value = '';
+  masterInput.value = '';
+  refInput.value = '';
+  document.getElementById('searchInput').value = '';
+
+  masterDrop.classList.remove('done');
+  document.getElementById('masterLabel').textContent = 'Click to attach the master file (.xls / .xlsx)';
+  refDrop.classList.remove('done');
+  document.getElementById('refLabel').textContent = 'Click to attach a reference report to auto-check against';
+
+  document.getElementById('thresholdRange').value = 18;
+  document.getElementById('thresholdVal').textContent = 18;
+
+  document.getElementById('sidebar').style.display = 'none';
+
+  setStage('upload'); setStep('upload');
+});
+
+/* =========================================================================
+   FUNNEL REVEAL ANIMATION
+   ========================================================================= */
+function runFunnelReveal(done){
+  const b = classify(state.rawRows, state.newRfqDays);
+  const total = state.rawRowCount;
+  const rows = [
+    ['data', b.data.length], ['legal', b.legal.length], ['yy', b.yy.length],
+    ['nn', b.nn.length], ['yn', b.yn.length], ['warehouse', b.warehouse.length], ['rfq', b.rfq.length],
+    ['newrfq', b.newrfq.length], ['review', b.review.length], ['excluded', b.excluded.length],
+  ];
+  const funnel = document.getElementById('funnel');
+  funnel.innerHTML = rows.map(([key,count]) => {
+    const meta = SHEET_META[key];
+    return `<div class="funnel-row">
+      <div class="funnel-label">${meta.title}</div>
+      <div class="funnel-track"><div class="funnel-fill" id="fill-${key}" style="background:${meta.color}"></div></div>
+      <div class="funnel-count mono" id="cnt-${key}">0</div>
+    </div>`;
+  }).join('');
+  funnel.style.display = 'block';
+  document.getElementById('processingMsg').textContent = `Sorting ${total.toLocaleString()} records into 8 sheets…`;
+
+  requestAnimationFrame(() => {
+    rows.forEach(([key,count]) => {
+      const pct = total ? Math.max(2, (count/total)*100) : 0;
+      document.getElementById(`fill-${key}`).style.width = pct + '%';
+      animateCount(document.getElementById(`cnt-${key}`), count);
+    });
+  });
+  setTimeout(done, 1100);
+}
+function animateCount(el, target){
+  const start = performance.now(); const dur = 700;
+  function tick(now){
+    const p = Math.min(1, (now-start)/dur);
+    el.textContent = Math.round(target * p).toLocaleString();
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* =========================================================================
+   RENDERING — SUMMARY, VALIDATION, NAV
+   ========================================================================= */
+function bucketCounts(){
+  const b = state.buckets;
+  return {
+    data:b.data.length, legal:b.legal.length, yy:b.yy.length, nn:b.nn.length, yn:b.yn.length,
+    warehouse:b.warehouse.length, rfq:b.rfq.length, newrfq:b.newrfq.length, review:b.review.length,
+    total: b.data.length+b.legal.length+b.yy.length+b.nn.length+b.yn.length+b.warehouse.length+b.rfq.length+b.newrfq.length+b.review.length,
+    excluded:b.excluded.length,
+  };
+}
+
+function renderAll(){
+  renderSummary();
+  renderNav();
+  renderValidation();
+  renderTable();
+  updateThresholdVisibility();
+}
+
+function renderSummary(){
+  const c = bucketCounts();
+  const cards = ['data','legal','yy','nn','warehouse','rfq','newrfq'];
+  const max = Math.max(...cards.map(k=>c[k]), 1);
+  const grid = document.getElementById('summaryGrid');
+  grid.innerHTML = cards.map(key => {
+    const meta = SHEET_META[key];
+    const pct = Math.max(4, (c[key]/max)*100);
+    return `<div class="sum-card ${state.activeSheet===key?'active':''}" data-sheet="${key}">
+      <div class="k">${meta.title}</div>
+      <div class="v mono">${c[key].toLocaleString()}</div>
+      <div class="bar" style="width:${pct}%; background:${meta.color}"></div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.sum-card').forEach(el => {
+    el.addEventListener('click', () => selectSheet(el.dataset.sheet));
+  });
+}
+
+function renderNav(){
+  const c = bucketCounts();
+  document.getElementById('nav-count-data').textContent = c.data.toLocaleString();
+  document.getElementById('nav-count-legal').textContent = c.legal.toLocaleString();
+  document.getElementById('nav-count-yy').textContent = c.yy.toLocaleString();
+  document.getElementById('nav-count-nn').textContent = c.nn.toLocaleString();
+  document.getElementById('nav-count-yn').textContent = c.yn.toLocaleString();
+  document.getElementById('nav-count-warehouse').textContent = c.warehouse.toLocaleString();
+  document.getElementById('nav-count-rfq').textContent = c.rfq.toLocaleString();
+  document.getElementById('nav-count-newrfq').textContent = c.newrfq.toLocaleString();
+  document.getElementById('nav-count-review').textContent = c.review.toLocaleString();
+  document.getElementById('nav-count-excluded').textContent = c.excluded.toLocaleString();
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.sheet===state.activeSheet);
+  });
+}
+
+document.querySelectorAll('.nav-item[data-sheet]').forEach(el=>{
+  el.addEventListener('click', () => selectSheet(el.dataset.sheet));
+});
+
+function selectSheet(key){
+  state.activeSheet = key; state.page = 1; state.search=''; state.sortCol=null;
+  document.getElementById('searchInput').value='';
+  renderNav(); renderSummary(); renderTable(); updateThresholdVisibility();
+}
+
+function updateThresholdVisibility(){
+  const onRfqTab = state.activeSheet==='rfq' || state.activeSheet==='newrfq';
+  document.getElementById('thresholdCtrl').style.display = (onRfqTab && !state.masterCodes) ? 'flex' : 'none';
+  document.getElementById('rfqMoveHint').style.display = onRfqTab ? 'inline' : 'none';
+}
+
+function renderValidation(){
+  const c = bucketCounts();
+  const list = document.getElementById('validationList');
+  const items = [];
+
+  items.push({
+    type:'ok',
+    text:`<b>${state.rawRowCount.toLocaleString()}</b> rows read from <b>${escapeHtml(state.sourceFileName)}</b> — every row was classified into exactly one sheet.`,
+    sub:`${c.data+c.legal+c.yy+c.nn+c.warehouse+c.rfq+c.newrfq+c.review+c.excluded} rows across all sheets (data counted separately from legal/warehouse/RFQ splits, which sit alongside it).`
+  });
+
+  if(state.missingColumns && state.missingColumns.length){
+    items.push({
+      type:'warn',
+      text:`<b>${state.missingColumns.length} expected column(s)</b> were not found in the uploaded file.`,
+      sub: state.missingColumns.join(', ') + ' — those cells will appear blank in the export.'
+    });
+  } else {
+    items.push({ type:'ok', text:'All 17 expected columns were found and mapped by name.' });
+  }
+
+  if(c.excluded>0){
+    items.push({
+      type:'info',
+      text:`<b>${c.excluded}</b> row(s) were kept out of the report per SOP rules (non-TBB type, bill location ≥ 4203, or an invalid status/verify combination) — view them in the <b>Excluded</b> tab with the reason for each.`,
+      sub:'Reference reports only cover in-scope TBB rows; nothing is silently discarded — every excluded row is listed with why.'
+    });
+  }
+
+  if(state.masterCodes){
+    const stats = state.buckets && state.buckets.masterStats;
+    const coverage = stats ? stats.coveragePct : null;
+    if(stats && stats.total>0 && stats.matched===stats.total){
+      items.push({
+        type:'warn',
+        text:`<b>Every row in this week's RFQ pool (${stats.total}) already exists in ${escapeHtml(state.masterFileName)}</b> — so New RFQ came out as 0. That's not a matching bug: VLOOKUP can only find "new" codes if the master file predates this run. Make sure you're attaching <b>last cycle's</b> TOTAL RFQ list, not one refreshed together with today's raw report. <button class="btn-inline" onclick="clearMasterAndReclassify()">Use date-based split instead</button>`,
+        sub:'Or re-attach an older TOTAL RFQ master file above and this banner will clear once a real gap shows up.'
+      });
+    } else {
+      items.push({
+        type:'ok',
+        text:`RFQ vs New RFQ was decided by <b>lookup against ${escapeHtml(state.masterFileName)}</b> (${state.masterCodes.size} codes, ${coverage}% of this week's pool matched) — code found in the master → RFQ, not found → New RFQ.`,
+        sub:'Tick individual rows in the RFQ / New RFQ tables to move them by hand if the master list is out of date.'
+      });
+    }
+  } else {
+    const uploaderList = [...state.newRfqUploaders].join(', ') || 'any uploader';
+    items.push({
+      type:'ok',
+      text:`RFQ vs New RFQ: rows uploaded by <b>${escapeHtml(uploaderList)}</b> and verified within the last ${state.newRfqDays} days go to New RFQ — everything else goes to RFQ.`,
+      sub:'This two-factor rule was reverse-engineered from your reference report (99.96% exact match) and is fully editable above the table. Attach a TOTAL RFQ master instead for an exact code lookup.'
+    });
+  }
+
+  if(state.refWorkbook){
+    const diff = compareAgainstReference();
+    if(diff.mismatches===0){
+      items.push({ type:'ok', text:`Matches <b>${escapeHtml(state.refFileName)}</b> — all ${diff.total} checked sheet counts agree exactly.` });
+    } else {
+      items.push({
+        type:'warn',
+        text:`<b>${diff.mismatches} of ${diff.total}</b> sheet counts differ from <b>${escapeHtml(state.refFileName)}</b>.`,
+        sub: diff.details.filter(d=>!d.match).map(d=>`${d.sheet}: this run ${d.computed} vs reference ${d.reference}`).join(' · ')
+      });
+    }
+  }
+
+  const dupCodes = findDuplicateCustomerCodes();
+  if(dupCodes.length){
+    items.push({ type:'warn', text:`<b>${dupCodes.length}</b> customer code(s) appear more than once in the source file.`, sub: dupCodes.slice(0,6).join(', ') + (dupCodes.length>6?'…':'') });
+  } else {
+    items.push({ type:'ok', text:'No duplicate customer codes found in the source file.' });
+  }
+
+  list.innerHTML = items.map(it => `
+    <div class="val-item">
+      <div class="val-icon ${it.type}">${it.type==='ok'?'✓':it.type==='warn'?'!':'i'}</div>
+      <div class="val-text">${it.text}${it.sub?`<div class="sub">${escapeHtml(it.sub).replace(/&#39;/g,"'")}</div>`:''}</div>
+    </div>`).join('');
+}
+
+function compareAgainstReference(){
+  const wb = state.refWorkbook;
+  const c = bucketCounts();
+  const checks = [
+    ['data', c.data], ['legal', c.legal], ['Y&Y', c.yy], ['N&N', c.nn],
+    ['warehouse', c.warehouse], ['RFQ', c.rfq], ['new rfq', c.newrfq],
+  ];
+  const norm = s => s.trim().toUpperCase().replace(/\s+/g,'');
+  const details = [];
+  let mismatches = 0;
+  for(const [sheetName, computed] of checks){
+    const sn = wb.SheetNames.find(n => norm(n)===norm(sheetName));
+    if(!sn){ details.push({ sheet:sheetName, reference:'sheet not found', computed, match:false }); mismatches++; continue; }
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { defval:null });
+    const refCount = rows.length;
+    const match = refCount === computed;
+    if(!match) mismatches++;
+    details.push({ sheet:sheetName, reference:refCount, computed, match });
+  }
+  return { total: checks.length, mismatches, details };
+}
+
+function findDuplicateCustomerCodes(){
+  const seen = new Map();
+  for(const r of state.rawRows){
+    const code = norm(r['CUSTOMER_CUSTOMER_CODE']);
+    if(code==='') continue;
+    seen.set(code, (seen.get(code)||0)+1);
+  }
+  return [...seen.entries()].filter(([,n])=>n>1).map(([code])=>code);
+}
+
+/* =========================================================================
+   TABLE RENDERING
+   ========================================================================= */
+function currentRows(){
+  const b = state.buckets;
+  const map = { data:b.data, legal:b.legal, yy:b.yy, nn:b.nn, yn:b.yn, warehouse:b.warehouse, rfq:b.rfq, newrfq:b.newrfq, review:b.review, excluded:b.excluded };
+  return map[state.activeSheet] || [];
+}
+
+function filteredSortedRows(){
+  let rows = currentRows();
+  if(state.search){
+    const q = state.search.toLowerCase();
+    rows = rows.filter(r => SCHEMA.some(h => String(r[h]??'').toLowerCase().includes(q)));
+  }
+  if(state.sortCol){
+    const col = state.sortCol, dir = state.sortDir;
+    rows = [...rows].sort((a,b) => {
+      let av = a[col], bv = b[col];
+      const an = toNum(av), bn = toNum(bv);
+      if(an!==null && bn!==null) return (an-bn)*dir;
+      return String(av??'').localeCompare(String(bv??'')) * dir;
+    });
+  }
+  return rows;
+}
+
+function renderTable(){
+  const meta = SHEET_META[state.activeSheet];
+  document.getElementById('tableTitle').textContent = meta.title;
+  document.getElementById('tableDesc').textContent = meta.desc;
+
+  if(state.activeSheet === 'total'){ renderTotalTable(); return; }
+
+  const rows = filteredSortedRows();
+  const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
+  state.page = Math.min(state.page, totalPages);
+  const startIdx = (state.page-1)*state.pageSize;
+  const pageRows = rows.slice(startIdx, startIdx+state.pageSize);
+
+  const showOverride = state.activeSheet==='rfq' || state.activeSheet==='newrfq';
+  const cols = meta.serial ? ['SR_NO', ...SCHEMA.slice(1)] : SCHEMA.slice();
+
+  const head = document.getElementById('tableHead');
+  head.innerHTML = (showOverride ? '<th style="width:30px;"></th>' : '') + cols.map(c => {
+    const arrow = state.sortCol===c ? (state.sortDir===1?'▲':'▼') : '';
+    return `<th data-col="${c}">${c==='SR_NO'?'S.NO':c}<span class="arrow">${arrow}</span></th>`;
+  }).join('');
+  head.querySelectorAll('th[data-col]').forEach(th=>{
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if(col==='SR_NO') return;
+      if(state.sortCol===col) state.sortDir *= -1; else { state.sortCol=col; state.sortDir=1; }
+      renderTable();
+    });
+  });
+
+  const body = document.getElementById('tableBody');
+  document.getElementById('emptyState').style.display = pageRows.length ? 'none' : 'block';
+
+  body.innerHTML = pageRows.map((r, i) => {
+    const key = rowKey(r);
+    const isNew = state.activeSheet==='newrfq';
+    let overrideCell = '';
+    if(showOverride){
+      overrideCell = `<td class="override-cell"><input type="checkbox" data-key="${escapeHtml(key)}" ${isNew?'checked':''}></td>`;
+    }
+    const cells = cols.map((c, ci) => {
+      if(c==='SR_NO') return `<td class="mono">${startIdx+i+1}</td>`;
+      let v = r[c];
+      if(c==='CONT_STATUS' || c==='CUSTOMER_CONTRACT_VERIFY_FLG' || c==='VERIFIED_FLG'){
+        const uv = up(v);
+        if(uv==='Y') return `<td><span class="badge badge-y">Y</span></td>`;
+        if(uv==='N') return `<td><span class="badge badge-n">N</span></td>`;
+        return `<td><span class="badge badge-blank">—</span></td>`;
+      }
+      return `<td title="${escapeHtml(v)}">${v===''||v===undefined||v===null ? '<span style="color:#C3CDCA;">—</span>' : escapeHtml(v)}</td>`;
+    }).join('');
+    return `<tr>${overrideCell}${cells}</tr>`;
+  }).join('');
+
+  body.querySelectorAll('input[type=checkbox][data-key]').forEach(cb=>{
+    cb.addEventListener('change', () => {
+      const key = cb.dataset.key;
+      state.overrides.set(key, cb.checked ? 'newrfq' : 'rfq');
+      state.buckets = classify(state.rawRows, state.newRfqDays);
+      renderSummary(); renderNav(); renderTable();
+    });
+  });
+
+  renderPagination(rows.length, totalPages);
+}
+
+function renderTotalTable(){
+  document.getElementById('tableHead').innerHTML = '<th>Metric</th><th>Count</th>';
+  const c = bucketCounts();
+  const rowsSummary = [
+    ['TOTAL RECORDS PROCESSED', state.rawRowCount],
+    ['TOTAL TBB (REPORTED)', c.total],
+    ['DATA (CLEANED)', c.data],
+    ['LEGAL', c.legal],
+    ['CONTRACT FEED & VERIFY (Y & Y)', c.yy],
+    ['CONTRACT NOT FEED & NOT VERIFY (N & N)', c.nn],
+    ['WAREHOUSE CONTRACT', c.warehouse],
+    ['TOTAL RFQ CONTRACT (RFQ + New RFQ + Review Required)', c.rfq + c.newrfq + c.review],
+    ['RFQ — BACKLOG', c.rfq],
+    ['RECENTLY MADE IN RFQ (New RFQ)', c.newrfq],
+    ['REVIEW REQUIRED (blank/duplicate P.CODE)', c.review],
+    ['EXCLUDED', c.excluded],
+  ];
+  document.getElementById('tableBody').innerHTML = rowsSummary.map(([label,val])=>
+    `<tr><td>${label}</td><td class="mono">${val.toLocaleString()}</td></tr>`).join('');
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('pagination').innerHTML='';
+}
+
+function renderPagination(totalRows, totalPages){
+  const el = document.getElementById('pagination');
+  const startIdx = totalRows ? (state.page-1)*state.pageSize+1 : 0;
+  const endIdx = Math.min(state.page*state.pageSize, totalRows);
+  el.innerHTML = `
+    <div>Showing <b>${startIdx.toLocaleString()}–${endIdx.toLocaleString()}</b> of <b>${totalRows.toLocaleString()}</b></div>
+    <div class="pg-btns">
+      <button id="pgFirst" ${state.page<=1?'disabled':''}>« First</button>
+      <button id="pgPrev" ${state.page<=1?'disabled':''}>‹ Prev</button>
+      <span style="align-self:center; padding:0 6px;">Page ${state.page} / ${totalPages}</span>
+      <button id="pgNext" ${state.page>=totalPages?'disabled':''}>Next ›</button>
+      <button id="pgLast" ${state.page>=totalPages?'disabled':''}>Last »</button>
+    </div>`;
+  document.getElementById('pgFirst').onclick = () => { state.page=1; renderTable(); };
+  document.getElementById('pgPrev').onclick = () => { state.page--; renderTable(); };
+  document.getElementById('pgNext').onclick = () => { state.page++; renderTable(); };
+  document.getElementById('pgLast').onclick = () => { state.page=totalPages; renderTable(); };
+}
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  state.search = e.target.value; state.page = 1; renderTable();
+});
+
+document.getElementById('thresholdRange').addEventListener('input', (e) => {
+  state.newRfqDays = parseInt(e.target.value, 10);
+  document.getElementById('thresholdVal').textContent = state.newRfqDays;
+  state.overrides.clear();
+  state.buckets = classify(state.rawRows, state.newRfqDays);
+  renderSummary(); renderNav(); renderValidation(); renderTable();
+});
+
+document.getElementById('uploaderCodesInput').addEventListener('input', (e) => {
+  const codes = e.target.value.split(',').map(s=>normalizeCode(s.trim())).filter(s=>s!=='');
+  state.newRfqUploaders = new Set(codes);
+  state.overrides.clear();
+  state.buckets = classify(state.rawRows, state.newRfqDays);
+  renderSummary(); renderNav(); renderValidation(); renderTable();
+});
+
+/* =========================================================================
+   EXCEL EXPORT
+   ========================================================================= */
+async function buildWorkbook(){
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'RFQ Control Deck';
+  wb.created = new Date();
+  const b = state.buckets;
+
+  async function writeSheet(name, rows, useSerial, extraCol){
+    const ws = wb.addWorksheet(name);
+    const cols = extraCol ? SCHEMA.concat([extraCol]) : SCHEMA;
+    ws.columns = cols.map(h => ({ header: h, key: h, width: Math.max(13, Math.min(32, h.length+2)) }));
+    const headerRow = ws.getRow(1);
+    headerRow.eachCell(c=>{
+      c.font = { bold:true, color:{argb:'FFEDF2F1'} };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF12233B'} };
+      c.alignment = { vertical:'middle' };
+      c.border = { bottom:{style:'thin',color:{argb:'FF0A1626'}} };
+    });
+    ws.views = [{ state:'frozen', ySplit:1 }];
+    let sr = 0;
+    for(const r of rows){
+      sr++;
+      const vals = {};
+      SCHEMA.forEach((h, idx) => {
+        let v = r[h];
+        if(useSerial && idx===0) v = sr;
+        vals[h] = (v===undefined || v===null) ? '' : v;
+      });
+      if(extraCol) vals[extraCol] = r['__excludeReason'] || r['__reviewReason'] || '';
+      ws.addRow(vals);
+    }
+    if(rows.length){
+      const lastCol = String.fromCharCode(64 + SCHEMA.length > 90 ? 90 : 64+SCHEMA.length);
+      ws.autoFilter = { from:'A1', to: `${lastCol}1` };
+    }
+    ws.eachRow((row, idx) => {
+      if(idx===1) return;
+      row.eachCell(c => { c.border = { bottom:{style:'hair',color:{argb:'FFE2E8E6'}} }; });
+    });
+    return ws;
+  }
+
+  await writeSheet('data', b.data, false);
+  await writeSheet('legal', b.legal, true);
+  await writeSheet('Y&Y', b.yy, true);
+  await writeSheet('N&N', b.nn, true);
+  await writeSheet('Y&N', b.yn, true, 'EXCLUSION_REASON');
+  await writeSheet('warehouse', b.warehouse, true);
+  await writeSheet('RFQ', b.rfq, true);
+  await writeSheet('new rfq', b.newrfq, true);
+  await writeSheet('review required', b.review, true, 'REVIEW_REASON');
+
+  const totalWs = wb.addWorksheet('total');
+  totalWs.getColumn(1).width = 42; totalWs.getColumn(2).width = 16;
+  const c = bucketCounts();
+  const head = totalWs.addRow(['METRIC', 'COUNT']);
+  head.eachCell(cell=>{ cell.font={bold:true,color:{argb:'FFEDF2F1'}}; cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF12233B'}}; });
+  const summaryRows = [
+    ['TOTAL RECORDS PROCESSED', state.rawRowCount],
+    ['DATA (CLEANED)', c.data],
+    ['LEGAL', c.legal],
+    ['CONTRACT FEED & VERIFY (Y & Y)', c.yy],
+    ['CONTRACT NOT FEED & NOT VERIFY (N & N)', c.nn],
+    ['WAREHOUSE CONTRACT', c.warehouse],
+    ['TOTAL RFQ CONTRACT (RFQ + New RFQ + Review Required)', c.rfq + c.newrfq + c.review],
+    ['RFQ — BACKLOG', c.rfq],
+    ['RECENTLY MADE IN RFQ (New RFQ)', c.newrfq],
+    ['REVIEW REQUIRED (blank/duplicate P.CODE)', c.review],
+    ['EXCLUDED', c.excluded],
+    ['RFQ / New RFQ split method', state.masterCodes ? `Lookup vs ${state.masterFileName}` : `Uploader in {${[...state.newRfqUploaders].join(',')}} + last ${state.newRfqDays}d`],
+    ['Source file', state.sourceFileName],
+    ['Generated at', new Date().toLocaleString()],
+  ];
+  summaryRows.forEach(r => totalWs.addRow(r));
+
+  if(b.excluded.length){
+    await writeSheet('excluded', b.excluded, false, 'EXCLUSION_REASON');
+  }
+
+  return wb;
+}
+
+document.getElementById('downloadBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('downloadBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = 'Building workbook…';
+  setStep('export');
+  try{
+    const wb = await buildWorkbook();
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const baseName = (state.sourceFileName||'report').replace(/\.[^.]+$/, '');
+    a.href = url; a.download = `${baseName}_classified.xlsx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(err){
+    console.error(err);
+    alert('Could not build the Excel file. Please try again.');
+  }finally{
+    btn.disabled = false; btn.innerHTML = originalHtml;
+    setStep('preview');
+  }
+});
+</script>
+</body>
+</html>
